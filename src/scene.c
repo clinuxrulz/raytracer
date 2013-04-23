@@ -19,8 +19,6 @@ typedef enum {
 	SceneType_FromSpace,
 	SceneType_Invert,
 	SceneType_Union,
-	SceneType_Intersect,
-	SceneType_Subtract,
 	SceneType_Checker,
 	SceneType_Reflective
 }SceneType;
@@ -155,7 +153,7 @@ Scene* scene_box(const Box* box) {
 	Plane rightPlane = (Plane){(Vec3){1,0,0},(FPType)-0.5 * box->lenX};
 	Plane leftPlane = (Plane){(Vec3){-1,0,0},(FPType)-0.5 * box->lenX};
 	Plane backPlane = (Plane){(Vec3){0,1,0},(FPType)-0.5 * box->lenY};
-	Plane frontPlane = (Plane){(Vec3){0,-1,0},(FPType)+0.5 * box->lenY};
+	Plane frontPlane = (Plane){(Vec3){0,-1,0},(FPType)-0.5 * box->lenY};
 	Plane topPlane = (Plane){(Vec3){0,0,1},(FPType)-0.5 * box->lenZ};
 	Plane bottomPlane = (Plane){(Vec3){0,0,-1},(FPType)-0.5 * box->lenZ};
 	return scene_from_space(
@@ -250,11 +248,13 @@ CollisionResult collision_ray_scene_union(const Ray* ray, const Scene* scene) {
 	const Scene* scene1 = ((ScenePair*)scene->data)->scene1;
 	const Scene* scene2 = ((ScenePair*)scene->data)->scene2;
 
+	const int max_iterations = 10;
+
 	CollisionResult r1;
 	{
 		Ray ray2 = *ray;
 		Vec3 p;
-		while (1) {
+		for (int i = 0; i < max_iterations; ++i) {
 			r1 = collision_ray_scene(&ray2, scene1);
 			if (r1.type == None) { break; }
 			p = ray_point(&ray2, r1.time);
@@ -272,7 +272,7 @@ CollisionResult collision_ray_scene_union(const Ray* ray, const Scene* scene) {
 	{
 		Ray ray2 = *ray;
 		Vec3 p;
-		while (1) {
+		for (int i = 0; i < max_iterations; ++i) {
 			r2 = collision_ray_scene(&ray2, scene2);
 			if (r2.type == None) { break; }
 			p = ray_point(&ray2, r2.time);
@@ -305,6 +305,12 @@ CollisionResult collision_ray_scene_union(const Ray* ray, const Scene* scene) {
 	}
 }
 
+int scene_union_is_point_in_solid(const Scene* scene, const Vec3* point) {
+	const Scene* scene1 = ((ScenePair*)scene->data)->scene1;
+	const Scene* scene2 = ((ScenePair*)scene->data)->scene2;
+	return scene_is_point_in_solid(scene1, point) || scene_is_point_in_solid(scene2, point);
+}
+
 Scene* scene_union(const Scene* scene1, const Scene* scene2) {
 	Scene* r = scene_new();
 	r->type = SceneType_Union;
@@ -312,6 +318,7 @@ Scene* scene_union(const Scene* scene1, const Scene* scene2) {
 	*((ScenePair*)r->data) = (ScenePair){scene1, scene2};
 	r->data_destructor_fn = scene_pair_destructor;
 	r->ray_collision_fn = collision_ray_scene_union;
+	r->is_point_in_solid_fn = scene_union_is_point_in_solid;
 	return r;
 }
 

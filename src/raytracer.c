@@ -38,10 +38,12 @@ static void init_scene() {
 	Plane plane = plane_init(&n, 50);
 	Colour colour1 = (Colour){1,1,1};
 	Colour colour2 = (Colour){1,0,0};
-	Vec3 box_centre = {0, 0, -200};
+	Vec3 box_centre = {100, 0, -250};
 	Axes box_axes = axes_identity();
 	box_axes = axes_translate(&box_axes, &box_centre);
-	Box box = box_init(&box_axes, 5, 5, 5);
+	box_axes = axes_rotate_u(&box_axes, -30);
+	box_axes = axes_rotate_v(&box_axes, -60);
+	Box box = box_init(&box_axes, 50, 50, 50);
 	scene = scene_union(
 		scene_reflective(
 			scene_subtract(
@@ -58,10 +60,10 @@ static void init_scene() {
 		)
 	);
 	//
-	//scene = scene_union(
-	//	scene,
-	//	scene_box(&box)
-	//);
+	scene = scene_union(
+		scene,
+		scene_box(&box)
+	);
 	//scene_unref(scene);
 	//scene = scene_box(&box);
 	/*
@@ -81,6 +83,7 @@ static void init_scene() {
 		Vec3 v = (Vec3){0,0,-300};
 		Axes axes = axes_identity();
 		axes = axes_translate(&axes, &v);
+		axes = axes_rotate_u(&axes, -30);
 		scene = scene_from_space(scene, &axes);
 	}*/
 }
