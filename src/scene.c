@@ -249,57 +249,60 @@ Scene* scene_invert(const Scene* scene) {
 CollisionResult collision_ray_scene_union(const Ray* ray, const Scene* scene) {
 	const Scene* scene1 = ((ScenePair*)scene->data)->scene1;
 	const Scene* scene2 = ((ScenePair*)scene->data)->scene2;
-	Ray ray2 = *ray;
-	FPType t_extra = 0.0;
-	int iteration = 0;
-	int max_iterations = 10;
-	while (1) {
-		++iteration;
-		if (iteration > max_iterations) {
-			return (CollisionResult){.type=None};
+
+	CollisionResult r1;
+	{
+		Ray ray2 = *ray;
+		Vec3 p;
+		while (1) {
+			r1 = collision_ray_scene(&ray2, scene1);
+			if (r1.type == None) { break; }
+			p = ray_point(&ray2, r1.time);
+			if (!scene_is_point_in_solid(scene2, &p)) { break; }
+			Vec3 ro = ray_point(&ray2, r1.time+0.1);
+			ray2 = ray_init(&ro, &ray2.direction);
 		}
-		CollisionResult r1 = collision_ray_scene(&ray2, scene1);
-		CollisionResult r2 = collision_ray_scene(&ray2, scene2);
-		Vec3 p1 = ray_point(&ray2, r1.time);
-		Vec3 p2 = ray_point(&ray2, r2.time);
-		int p1_inside = scene_is_point_in_solid(scene2, &p1);
-		int p2_inside = scene_is_point_in_solid(scene1, &p2);
-		FPType t1 = r1.time;
-		FPType t2 = r2.time;
-		r1.time += t_extra;
-		r2.time += t_extra;
-		if (r1.type == None) {
-			if (r2.type == None) {
-				return (CollisionResult){.type=None};
-			} else {
-				if (!p2_inside) {
-					return r2;
-				}
-			}
-		} else {
-			if (r2.type == None) {
-				if (!p1_inside) {
-					return r1;
-				}
-			} else {
-				if (r1.time < r2.time) {
-					if (!p1_inside) {
-						return r1;
-					}
-				} else {
-					if (!p2_inside) {
-						return r2;
-					}
-				}
-			}
+		if (r1.type != None) {
+			Vec3 v = vec3_sub(&p, &ray->origin);
+			r1.time = vec3_dot(&ray->direction, &v);
 		}
-		FPType t = (r1.type != None && t1 < t2) ? t1 : t2;
-		t_extra += t+0.1;
-		Vec3 ro = ray_point(&ray2, t+0.1);
-		ray2 = ray_init(&ro, &ray2.direction);
 	}
-	assert(!"unexpected line reached");
-	return (CollisionResult){.type=None};
+
+	CollisionResult r2;
+	{
+		Ray ray2 = *ray;
+		Vec3 p;
+		while (1) {
+			r2 = collision_ray_scene(&ray2, scene2);
+			if (r2.type == None) { break; }
+			p = ray_point(&ray2, r2.time);
+			if (!scene_is_point_in_solid(scene1, &p)) { break; }
+			Vec3 ro = ray_point(&ray2, r2.time+0.1);
+			ray2 = ray_init(&ro, &ray2.direction);
+		}
+		if (r2.type != None) {
+			Vec3 v = vec3_sub(&p, &ray->origin);
+			r2.time = vec3_dot(&ray->direction, &v);
+		}
+	}
+
+	if (r1.type == None) {
+		if (r2.type == None) {
+			return (CollisionResult){.type=None};
+		} else {
+			return r2;
+		}
+	} else {
+		if (r2.type == None) {
+			return r1;
+		} else {
+			if (r1.time < r2.time) {
+				return r1;
+			} else {
+				return r2;
+			}
+		}
+	}
 }
 
 Scene* scene_union(const Scene* scene1, const Scene* scene2) {

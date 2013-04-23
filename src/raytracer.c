@@ -66,8 +66,22 @@ static void init_scene() {
 	//scene = scene_box(&box);
 	/*
 	{ // Test
-		Plane halfSpace1 = {.n=(Vec3){0,0,1},.d=300};
-		scene = scene_half_space(&halfSpace1);
+		Plane halfSpaces[] = {
+			(Plane){.n=(Vec3){-1,0,0},.d=-50},
+			(Plane){.n=(Vec3){1,0,0},.d=-50},
+			(Plane){.n=(Vec3){0,-1,0},.d=-50},
+			(Plane){.n=(Vec3){0,1,0},.d=-50},
+			(Plane){.n=(Vec3){0,0,-1},.d=-50},
+			(Plane){.n=(Vec3){0,0,1},.d=-50}
+		};
+		scene = scene_half_space(&halfSpaces[0]);
+		for (int i = 1; i < sizeof(halfSpaces) / sizeof(halfSpaces[0]); ++i) {
+			scene = scene_intersect(scene, scene_half_space(&halfSpaces[i]));
+		}
+		Vec3 v = (Vec3){0,0,-300};
+		Axes axes = axes_identity();
+		axes = axes_translate(&axes, &v);
+		scene = scene_from_space(scene, &axes);
 	}*/
 }
 
