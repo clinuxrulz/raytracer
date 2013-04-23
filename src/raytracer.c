@@ -107,16 +107,7 @@ static void draw() {
 		int offset2 = 0;
 		for (int x = 0; x < SCREEN_WIDTH; ++x) {
 			Ray ray = camera_screen_coord_to_ray(&camera, x, y, SCREEN_WIDTH, SCREEN_HEIGHT);
-			CollisionResult cr;
-			while (1) {
-				cr = collision_ray_scene(&ray, scene);
-				if (cr.type == Exit) {
-					Vec3 ro = ray_point(&ray, cr.time + (FPType)0.1);
-					ray = ray_init(&ro, &ray.direction);
-					continue;
-				}
-				break;
-			}
+			CollisionResult cr = collision_ray_scene(&ray, scene);
 			if (cr.type == Enter) {
 				Colour clr = cr.colour;
 				FPType reflectiveness = cr.reflectiveness;
@@ -129,15 +120,7 @@ static void draw() {
 					Ray ray2 = ray_init(&point, &rd);
 					Vec3 ro = ray_point(&ray2, 0.1);
 					ray2 = ray_init(&ro, &rd);
-					while (1) {
-						cr = collision_ray_scene(&ray2, scene);
-						if (cr.type == Exit) {
-							Vec3 ro = ray_point(&ray2, cr.time + (FPType)0.1);
-							ray2 = ray_init(&ro, &ray2.direction);
-							continue;
-						}
-						break;
-					}
+					cr = collision_ray_scene(&ray2, scene);
 					clr = colour_mix(&clr, &cr.colour, reflectiveness);
 				}
 
@@ -147,15 +130,7 @@ static void draw() {
 					ro = ray_point(&ray, (FPType)0.1);
 					ray = ray_init(&ro, &light_dir);
 				}
-				while (1) {
-					cr = collision_ray_scene(&ray, scene);
-					if (cr.type == Exit) {
-						Vec3 ro = ray_point(&ray, cr.time + (FPType)0.1);
-						ray = ray_init(&ro, &ray.direction);
-						continue;
-					}
-					break;
-				}
+				cr = collision_ray_scene(&ray, scene);
 				if (cr.type == Enter) {
 					// Shadow
 					a *= 0.8;
