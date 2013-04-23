@@ -28,16 +28,20 @@ static void init_scene() {
 	camera = camera_set_fov(&camera, SCREEN_HEIGHT, 75);
 	//camera = camera_turn_up(&camera, 90);
 	//camera = camera_move_back(&camera, 400);
-	Vec3 centre1 = {-40,10,200};
+	Vec3 centre1 = {-40,10,-200};
 	FPType radius1 = 60;
 	Sphere sphere1 = sphere_init(&centre1, radius1);
-	Vec3 centre2 = {40,10,160};
+	Vec3 centre2 = {40,10,-160};
 	FPType radius2 = 60;
 	Sphere sphere2 = sphere_init(&centre2, radius2);
 	Vec3 n = (Vec3){0,1,0};
 	Plane plane = plane_init(&n, 50);
 	Colour colour1 = (Colour){1,1,1};
 	Colour colour2 = (Colour){1,0,0};
+	Vec3 box_centre = {0, 0, -200};
+	Axes box_axes = axes_identity();
+	box_axes = axes_translate(&box_axes, &box_centre);
+	Box box = box_init(&box_axes, 5, 5, 5);
 	scene = scene_union(
 		scene_reflective(
 			scene_subtract(
@@ -53,6 +57,18 @@ static void init_scene() {
 			&colour2
 		)
 	);
+	//
+	//scene = scene_union(
+	//	scene,
+	//	scene_box(&box)
+	//);
+	//scene_unref(scene);
+	//scene = scene_box(&box);
+	/*
+	{ // Test
+		Plane halfSpace1 = {.n=(Vec3){0,0,1},.d=300};
+		scene = scene_half_space(&halfSpace1);
+	}*/
 }
 
 static void final_scene() {
@@ -70,7 +86,7 @@ static void draw() {
 	if (SDL_MUSTLOCK(screen)) {
 		SDL_LockSurface(screen);
 	}
-	Vec3 light_dir = (Vec3){1,1,-1};
+	Vec3 light_dir = (Vec3){1,1,1};
 	light_dir = vec3_normalize(&light_dir);
 	int offset1 = 0;
 	for (int y = 0; y < SCREEN_HEIGHT; ++y) {

@@ -14,6 +14,9 @@ typedef enum {
 	SceneType_Empty,
 	SceneType_Sphere,
 	SceneType_Plane,
+	SceneType_HalfSpace,
+	SceneType_Box,
+	SceneType_FromSpace,
 	SceneType_Invert,
 	SceneType_Union,
 	SceneType_Intersect,
@@ -132,6 +135,85 @@ Scene* scene_plane(const Plane* plane) {
 	return scene;
 }
 
+int scene_half_space_is_point_inside_solid(const Scene* scene, const Vec3* point) {
+	const Plane* plane = (const Plane*)scene->data;
+	return vec3_dot(point, &plane->n) + plane->d <= 0;
+}
+
+Scene* scene_half_space(const Plane* plane) {
+	Scene* scene = scene_new();
+	scene->type = SceneType_HalfSpace;
+	scene->data = malloc(sizeof(Plane));
+	memcpy(scene->data, plane, sizeof(Plane));
+	scene->data_destructor_fn = free_data_destructor;
+	scene->ray_collision_fn = collision_ray_scene_plane;
+	scene->is_point_in_solid_fn = scene_half_space_is_point_inside_solid;
+	return scene;
+}
+
+Scene* scene_box(const Box* box) {
+	Plane rightPlane = (Plane){(Vec3){1,0,0},(FPType)-0.5 * box->lenX};
+	Plane leftPlane = (Plane){(Vec3){-1,0,0},(FPType)-0.5 * box->lenX};
+	Plane backPlane = (Plane){(Vec3){0,1,0},(FPType)-0.5 * box->lenY};
+	Plane frontPlane = (Plane){(Vec3){0,-1,0},(FPType)+0.5 * box->lenY};
+	Plane topPlane = (Plane){(Vec3){0,0,1},(FPType)-0.5 * box->lenZ};
+	Plane bottomPlane = (Plane){(Vec3){0,0,-1},(FPType)-0.5 * box->lenZ};
+	return scene_from_space(
+		scene_intersect(
+			scene_intersect(
+				scene_half_space(&rightPlane),
+				scene_half_space(&leftPlane)
+			),
+			scene_intersect(
+				scene_intersect(
+					scene_half_space(&backPlane),
+					scene_half_space(&frontPlane)
+				),
+				scene_intersect(
+					scene_half_space(&topPlane),
+					scene_half_space(&bottomPlane)
+				)
+			)
+		),
+		&box->axes
+	);
+}
+
+typedef struct {
+	const Scene* scene;
+	Axes space;
+}FromSpaceData;
+
+void from_space_data_destructor(void* data) {
+	scene_unref((Scene*)((FromSpaceData*)data)->scene);
+	free(data);
+}
+
+CollisionResult collision_ray_scene_from_space(const Ray* ray, const Scene* scene) {
+	const Scene* base_scene = ((FromSpaceData*)scene->data)->scene;
+	const Axes* space = &((FromSpaceData*)scene->data)->space;
+	Ray ray2 = ray_to_space(ray, space);
+	return collision_ray_scene(&ray2, base_scene);
+}
+
+int scene_from_space_is_point_in_solid(const Scene* scene, const Vec3* point) {
+	const Scene* base_scene = ((FromSpaceData*)scene->data)->scene;
+	const Axes* space = &((FromSpaceData*)scene->data)->space;
+	Vec3 point2 = point_to_space(point, space);
+	return scene_is_point_in_solid(base_scene, &point2);
+}
+
+Scene* scene_from_space(const Scene* scene, const Axes* space) {
+	Scene* r = scene_new();
+	r->type = SceneType_FromSpace;
+	r->data = malloc(sizeof(FromSpaceData));
+	*((FromSpaceData*)r->data) = (FromSpaceData){scene, *space};
+	r->data_destructor_fn = from_space_data_destructor;
+	r->ray_collision_fn = collision_ray_scene_from_space;
+	r->is_point_in_solid_fn = scene_from_space_is_point_in_solid;
+	return r;
+}
+
 CollisionResult collision_ray_scene_invert(const Ray* ray, const Scene* scene) {
 	CollisionResult r = collision_ray_scene(ray, (const Scene*)scene->data);
 	if (r.type == None) {
@@ -169,7 +251,13 @@ CollisionResult collision_ray_scene_union(const Ray* ray, const Scene* scene) {
 	const Scene* scene2 = ((ScenePair*)scene->data)->scene2;
 	Ray ray2 = *ray;
 	FPType t_extra = 0.0;
+	int iteration = 0;
+	int max_iterations = 10;
 	while (1) {
+		++iteration;
+		if (iteration > max_iterations) {
+			return (CollisionResult){.type=None};
+		}
 		CollisionResult r1 = collision_ray_scene(&ray2, scene1);
 		CollisionResult r2 = collision_ray_scene(&ray2, scene2);
 		Vec3 p1 = ray_point(&ray2, r1.time);

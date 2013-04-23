@@ -12,12 +12,16 @@
 #include "collision.h"
 #include "sphere.h"
 #include "plane.h"
+#include "box.h"
 
 typedef struct _Scene Scene;
 
 Scene* scene_empty();
 Scene* scene_sphere(const Sphere* sphere);
 Scene* scene_plane(const Plane* plane);
+Scene* scene_half_space(const Plane* plane);
+Scene* scene_box(const Box* box);
+Scene* scene_from_space(const Scene* scene, const Axes* space);
 Scene* scene_invert(const Scene* scene);
 Scene* scene_union(const Scene* scene1, const Scene* scene2);
 Scene* scene_intersect(const Scene* scene1, const Scene* scene2);

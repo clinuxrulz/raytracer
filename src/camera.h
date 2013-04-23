@@ -39,7 +39,7 @@ static inline Camera camera_set_axes(const Camera* camera, const Axes* axes) {
 }
 
 static inline Ray camera_screen_coord_to_ray(const Camera* camera, int coordX, int coordY, int screenWidth, int screenHeight) {
-	Vec3 depth_vector = vec3_scale(&camera->axes.w, -camera->screen_depth);
+	Vec3 depth_vector = vec3_scale(&camera->axes.w, camera->screen_depth);
 	Vec3 x_vector = vec3_scale(&camera->axes.u, coordX - screenWidth/2);
 	Vec3 y_vector = vec3_scale(&camera->axes.v, screenHeight/2 - coordY);
 	Vec3 rd = vec3_add(&depth_vector, &x_vector);

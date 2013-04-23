@@ -36,7 +36,7 @@ static __attribute__((unused)) CollisionResult collision_ray_plane(const Ray* ra
 	// rd.n.t = -(d + ro.n)
 	// t = -(d + ro.n) / (rd.n)
 	FPType time = -(plane->d + vec3_dot(&ray->origin, &plane->n)) / vec3_dot(&ray->direction, &plane->n);
-	if (isnan(time) || time < (FPType)0) {
+	if (isnan(time) || isinf(time) || time < (FPType)0) {
 		return (CollisionResult){
 			.type = None,
 			.time = 0,
@@ -75,7 +75,7 @@ static __attribute__((unused)) CollisionResult collision_ray_sphere(const Ray* r
 	FPType ro_sub_c_dot_rd = vec3_dot(&ro_sub_c, rd);
 	FPType rd_dot_rd = vec3_dot(rd, rd);
 	FPType x = -vec3_dot(&ro_sub_c, rd) / rd_dot_rd;
-	if (isnan(x)) {
+	if (isnan(x) || isinf(x)) {
 		return (CollisionResult){
 			.type = None,
 			.time = 0,

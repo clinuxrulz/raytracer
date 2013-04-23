@@ -12,6 +12,7 @@
 #include "types.h"
 #include "util.h"
 #include "vec3.h"
+#include "ray.h"
 
 typedef struct {
 	Vec3 u,v,w,o;
@@ -72,6 +73,70 @@ static inline Axes axes_rotate_w(const Axes* axes, FPType a) {
 		vec3_add(&v_ca, &u_sa),
 		axes->w,
 		axes->o
+	};
+}
+
+static inline Vec3 vector_to_space(const Vec3* vector, const Axes* space) {
+	return (Vec3){
+		vec3_dot(vector, &space->u),
+		vec3_dot(vector, &space->v),
+		vec3_dot(vector, &space->w)
+	};
+}
+
+static inline Vec3 vector_from_space(const Vec3* vector, const Axes* space) {
+	return (Vec3){
+		space->u.x * vector->x + space->v.x * vector->y + space->w.x * vector->z,
+		space->u.y * vector->x + space->v.y * vector->y + space->w.y * vector->z,
+		space->u.z * vector->x + space->v.z * vector->y + space->w.z * vector->z
+	};
+}
+
+static inline Vec3 point_to_space(const Vec3* point, const Axes* space) {
+	return (Vec3){
+		vec3_dot(point, &space->u) - vec3_dot(&space->o, &space->u),
+		vec3_dot(point, &space->v) - vec3_dot(&space->o, &space->v),
+		vec3_dot(point, &space->w) - vec3_dot(&space->o, &space->w)
+	};
+}
+
+static inline Vec3 point_from_space(const Vec3* point, const Axes* space) {
+	return (Vec3){
+		space->u.x * point->x + space->v.x * point->y + space->w.x * point->z + space->o.x,
+		space->u.y * point->x + space->v.y * point->y + space->w.y * point->z + space->o.y,
+		space->u.z * point->x + space->v.z * point->y + space->w.z * point->z + space->o.z
+	};
+}
+
+static inline Ray ray_to_space(const Ray* ray, const Axes* space) {
+	return (Ray){
+		.origin = point_to_space(&ray->origin, space),
+		.direction = vector_to_space(&ray->direction, space)
+	};
+}
+
+static inline Ray ray_from_space(const Ray* ray, const Axes* space) {
+	return (Ray){
+		.origin = point_from_space(&ray->origin, space),
+		.direction = vector_from_space(&ray->direction, space)
+	};
+}
+
+static inline Axes axes_to_space(const Axes* axes, const Axes* space) {
+	return (Axes){
+		.u = vector_to_space(&axes->u, space),
+		.v = vector_to_space(&axes->v, space),
+		.w = vector_to_space(&axes->w, space),
+		.o = point_to_space(&axes->o, space),
+	};
+}
+
+static inline Axes axes_from_space(const Axes* axes, const Axes* space) {
+	return (Axes){
+		.u = vector_from_space(&axes->u, space),
+		.v = vector_from_space(&axes->v, space),
+		.w = vector_from_space(&axes->w, space),
+		.o = point_from_space(&axes->o, space),
 	};
 }
 
