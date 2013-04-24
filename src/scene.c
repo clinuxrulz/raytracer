@@ -191,7 +191,9 @@ CollisionResult collision_ray_scene_from_space(const Ray* ray, const Scene* scen
 	const Scene* base_scene = ((FromSpaceData*)scene->data)->scene;
 	const Axes* space = &((FromSpaceData*)scene->data)->space;
 	Ray ray2 = ray_to_space(ray, space);
-	return collision_ray_scene(&ray2, base_scene);
+	CollisionResult cr = collision_ray_scene(&ray2, base_scene);
+	cr.normal = vector_from_space(&cr.normal, space);
+	return cr;
 }
 
 int scene_from_space_is_point_in_solid(const Scene* scene, const Vec3* point) {

@@ -26,6 +26,7 @@ Scene* scene_invert(const Scene* scene);
 Scene* scene_union(const Scene* scene1, const Scene* scene2);
 Scene* scene_intersect(const Scene* scene1, const Scene* scene2);
 Scene* scene_subtract(const Scene* scene1, const Scene* scene2);
+Scene* scene_union_many(const Scene** scenes, int count);
 Scene* scene_checker(const Scene* scene, FPType size, const Colour* colour1, const Colour* colour2);
 Scene* scene_reflective(const Scene* scene, FPType reflectiveness);
 void scene_ref(Scene* scene);
