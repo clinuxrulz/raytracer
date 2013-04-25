@@ -13,6 +13,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 static const int SCREEN_WIDTH = 640;
 static const int SCREEN_HEIGHT = 480;
@@ -188,9 +191,23 @@ static void run() {
 	final_scene();
 }
 
-int main(void) {
+#ifdef _WIN32
+int CALLBACK WinMain(
+	HINSTANCE hInstance,
+	HINSTANCE hPrevInstance,
+	LPSTR lpCmdLine,
+	int nCmdShow
+) {
 	SDL_Init(SDL_INIT_VIDEO);
 	run();
 	SDL_Quit();
 	return EXIT_SUCCESS;
 }
+#else
+int main(int argc, char** argv) {
+	SDL_Init(SDL_INIT_VIDEO);
+	run();
+	SDL_Quit();
+	return EXIT_SUCCESS;
+}
+#endif
