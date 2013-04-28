@@ -40,7 +40,7 @@ static inline Camera camera_set_axes(const Camera* camera, const Axes* axes) {
 }
 
 static inline Ray camera_screen_coord_to_ray(const Camera* camera, int coordX, int coordY, int screenWidth, int screenHeight) {
-	Vec3 depth_vector = vec3_scale(&camera->axes.w, camera->screen_depth);
+	Vec3 depth_vector = vec3_scale(&camera->axes.w, -camera->screen_depth);
 	Vec3 x_vector = vec3_scale(&camera->axes.u, coordX - screenWidth/2);
 	Vec3 y_vector = vec3_scale(&camera->axes.v, screenHeight/2 - coordY);
 	Vec3 rd = vec3_add(&depth_vector, &x_vector);
@@ -55,7 +55,7 @@ static inline Ray camera_screen_coord_to_ray(const Camera* camera, int coordX, i
 static inline Text* camera_screen_coord_to_ray_glsl_code() {
 	return text(
 		"void screen_coord_to_ray(in vec2 coord, out vec3 ro, out vec3 rd) {\n"
-		"	vec3 depth_vector = camera_w * screen_depth;\n"
+		"	vec3 depth_vector = camera_w * -screen_depth;\n"
 		"	vec3 x_vector = camera_u * (coord.x - screen_width/2.0);\n"
 		"	vec3 y_vector = camera_v * (screen_height/2.0 - coord.y);\n"
 		"	ro = camera_o;\n"

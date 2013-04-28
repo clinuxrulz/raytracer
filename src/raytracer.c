@@ -29,7 +29,7 @@ static Camera camera;
 
 static void init_scene() {
 	camera = camera_init();
-	camera = camera_set_fov(&camera, SCREEN_HEIGHT, 75);
+	camera = camera_set_fov(&camera, SCREEN_HEIGHT, 45);
 	//camera = camera_turn_up(&camera, 90);
 	//camera = camera_move_back(&camera, 400);
 	Vec3 centre1 = {-40,10,-200};
@@ -192,7 +192,7 @@ static void run() {
 	final_scene();
 }
 
-#if RAYTRACE_MODE == RAYTRACE_MODE_SOFTWARE
+#if (RAYTRACE_MODE==RAYTRACE_MODE_SOFTWARE)
 #ifdef _WIN32
 int CALLBACK WinMain(
 	HINSTANCE hInstance,

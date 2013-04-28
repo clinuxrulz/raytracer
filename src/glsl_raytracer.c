@@ -26,6 +26,11 @@ static int done = 0;
 static GLuint programId,vertexShaderId,fragmentShaderId;
 static Camera camera;
 
+static int left_down = 0;
+static int right_down = 0;
+static int down_down = 0;
+static int up_down = 0;
+
 static const char* sample_vertex_shader =
 	"void main() {\n"
 	"	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
@@ -91,7 +96,7 @@ static void create_shader_program() {
 	vertexShaderId = glCreateShader(GL_VERTEX_SHADER);
 	fragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
 
-	Vec3 sphere_centre = (Vec3){0,0,-200};
+	Vec3 sphere_centre = (Vec3){0,0,-100};
 	FPType sphere_radius = 50;
 	Sphere sphere = sphere_init(&sphere_centre, sphere_radius);
 	Scene* scene = scene_sphere(&sphere);
@@ -236,7 +241,54 @@ static void process_events() {
 		case SDL_QUIT:
 			done = 1;
 			break;
+		case SDL_KEYDOWN:
+			switch (event.key.keysym.sym) {
+			case SDLK_LEFT:
+				left_down = 1;
+				break;
+			case SDLK_RIGHT:
+				right_down = 1;
+				break;
+			case SDLK_UP:
+				up_down = 1;
+				break;
+			case SDLK_DOWN:
+				down_down = 1;
+				break;
+			}
+			break;
+		case SDL_KEYUP:
+			switch (event.key.keysym.sym) {
+			case SDLK_LEFT:
+				left_down = 0;
+				break;
+			case SDLK_RIGHT:
+				right_down = 0;
+				break;
+			case SDLK_UP:
+				up_down = 0;
+				break;
+			case SDLK_DOWN:
+				down_down = 0;
+				break;
+			}
+			break;
 		}
+	}
+}
+
+static void move_camera() {
+	if (left_down) {
+		camera = camera_turn_left(&camera, 3);
+	}
+	if (right_down) {
+		camera = camera_turn_right(&camera, 3);
+	}
+	if (down_down) {
+		camera = camera_turn_down(&camera, 3);
+	}
+	if (up_down) {
+		camera = camera_turn_up(&camera, 3);
 	}
 }
 
@@ -244,6 +296,7 @@ static void run() {
 	while (!done) {
 		render();
 		process_events();
+		move_camera();
 		SDL_Delay(10);
 	}
 }
@@ -259,7 +312,7 @@ static void start() {
 	SDL_Quit();
 }
 
-#if RAYTRACE_MODE == RAYTRACE_MODE_GLSL
+#if (RAYTRACE_MODE==RAYTRACE_MODE_GLSL)
 #ifdef _WIN32
 int CALLBACK WinMain(
 	HINSTANCE hInstance,
