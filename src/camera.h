@@ -119,7 +119,7 @@ static inline Camera camera_move_down(const Camera* camera, FPType dist) {
 }
 
 static inline Camera camera_turn_left(const Camera* camera, double a) {
-	Axes axes = axes_rotate_v(&camera->axes, a);
+	Axes axes = axes_rotate_v(&camera->axes, -a);
 	return camera_set_axes(
 		camera,
 		&axes
@@ -127,7 +127,7 @@ static inline Camera camera_turn_left(const Camera* camera, double a) {
 }
 
 static inline Camera camera_turn_right(const Camera* camera, double a) {
-	Axes axes = axes_rotate_v(&camera->axes, -a);
+	Axes axes = axes_rotate_v(&camera->axes, a);
 	return camera_set_axes(
 		camera,
 		&axes
@@ -143,7 +143,7 @@ static inline Camera camera_turn_up(const Camera* camera, double a) {
 }
 
 static inline Camera camera_turn_down(const Camera* camera, double a) {
-	Axes axes = axes_rotate_u(&camera->axes, a);
+	Axes axes = axes_rotate_u(&camera->axes, -a);
 	return camera_set_axes(
 		camera,
 		&axes
