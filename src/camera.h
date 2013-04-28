@@ -12,6 +12,7 @@
 #include "axes.h"
 #include "vec3.h"
 #include "ray.h"
+#include "text.h"
 
 typedef struct {
 	Axes axes;
@@ -48,6 +49,18 @@ static inline Ray camera_screen_coord_to_ray(const Camera* camera, int coordX, i
 	return ray_init(
 		&camera->axes.o,
 		&rd
+	);
+}
+
+static inline Text* camera_screen_coord_to_ray_glsl_code() {
+	return text(
+		"void screen_coord_to_ray(in vec2 coord, out vec3 ro, out vec3 rd) {\n"
+		"	vec3 depth_vector = camera_w * screen_depth;\n"
+		"	vec3 x_vector = camera_u * (coord.x - screen_width/2.0);\n"
+		"	vec3 y_vector = camera_v * (screen_height/2.0 - coord.y);\n"
+		"	ro = camera_o;\n"
+		"	rd = normalize(depth_vector + x_vector + y_vector);\n"
+		"}\n"
 	);
 }
 

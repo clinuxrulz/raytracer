@@ -24,17 +24,19 @@ typedef enum {
 }SceneType;
 
 typedef CollisionResult (*RayCollisionFn)(const Ray* ray, const Scene* scene);
-
 typedef void (*DataDestructorFn)(void* data);
-
 typedef int (*IsPointInSolidFn)(const Scene* scene, const Vec3* point);
+typedef Text* (*RayCollisionFnGLSLCode)(const Scene* scene);
+typedef Text* (*IsPointInSolidFnGLSLCode)(const Scene* scene);
 
 struct _Scene {
 	SceneType type;
 	void* data;
 	DataDestructorFn data_destructor_fn;
 	RayCollisionFn ray_collision_fn;
+	RayCollisionFnGLSLCode ray_collision_fn_glsl_code;
 	IsPointInSolidFn is_point_in_solid_fn;
+	IsPointInSolidFnGLSLCode is_point_in_solid_fn_glsl_code;
 	int ref_count;
 };
 
@@ -67,8 +69,21 @@ CollisionResult collision_ray_scene_empty(const Ray* ray, const Scene* scene) {
 	};
 }
 
+Text* collision_ray_scene_empty_glsl_code(const Scene* scene) {
+	return text(
+		"type = 0;\n"
+		"time = 0.0\n"
+		"normal = vec3(0.0,0.0,0.0);\n"
+		"reflectiveness = 0.0;\n"
+	);
+}
+
 int scene_empty_is_point_in_solid(const Scene* scene, const Vec3* point) {
 	return 0;
+}
+
+Text* scene_empty_is_point_in_solid_glsl_code(const Scene* scene) {
+	return text("inside = 0;");
 }
 
 static Scene* scene_new() {
@@ -77,7 +92,9 @@ static Scene* scene_new() {
 	scene->data = 0;
 	scene->data_destructor_fn = free_data_destructor;
 	scene->ray_collision_fn = collision_ray_scene_empty;
+	scene->ray_collision_fn_glsl_code = collision_ray_scene_empty_glsl_code;
 	scene->is_point_in_solid_fn = scene_empty_is_point_in_solid;
+	scene->is_point_in_solid_fn_glsl_code = scene_empty_is_point_in_solid_glsl_code;
 	scene->ref_count = 1;
 	return scene;
 }
@@ -94,7 +111,9 @@ Scene* scene_empty() {
 	scene->type = SceneType_Empty;
 	scene->data = 0;
 	scene->ray_collision_fn = collision_ray_scene_empty;
+	scene->ray_collision_fn_glsl_code = collision_ray_scene_empty_glsl_code;
 	scene->is_point_in_solid_fn = scene_empty_is_point_in_solid;
+	scene->is_point_in_solid_fn_glsl_code = scene_empty_is_point_in_solid_glsl_code;
 	return scene;
 }
 
@@ -102,10 +121,54 @@ CollisionResult collision_ray_scene_sphere(const Ray* ray, const Scene* scene) {
 	return collision_ray_sphere(ray, (const Sphere*)scene->data);
 }
 
+Text* collision_ray_scene_sphere_glsl_code(const Scene* scene) {
+	const Sphere* sphere = (const Sphere*)scene->data;
+	const Text* r[] = {
+		text(
+			"{\n"
+			"    vec3 c = vec3("
+		),
+		text_from_float(sphere->centre.x), text(", "), text_from_float(sphere->centre.y), text(", "), text_from_float(sphere->centre.z),
+		text(
+			");\n"
+			"    float r = "
+		),
+		text_from_float(sphere->radius),
+		text(
+			";\n"
+			"    collision_ray_sphere(ro, rd, c, r, type, time, normal, colour, reflectiveness);\n"
+			"}"
+		)
+	};
+	return text_append_many(r, sizeof(r) / sizeof(r[0]));
+}
+
 int scene_sphere_is_point_in_solid(const Scene* scene, const Vec3* point) {
 	const Sphere* sphere = (const Sphere*)scene->data;
 	Vec3 tmp = vec3_sub(point, &sphere->centre);
 	return vec3_length_squared(&tmp) <= sphere->radius * sphere->radius;
+}
+
+Text* scene_sphere_is_point_in_solid_glsl_code(const Scene* scene) {
+	const Sphere* sphere = (const Sphere*)scene->data;
+	const Text* r[] = {
+		text(
+			"{\n"
+			"	vec3 c = vec3("
+		),
+		text_from_float(sphere->centre.x), text(", "), text_from_float(sphere->centre.y), text(", "), text_from_float(sphere->centre.z),
+		text(
+			");\n"
+			"	float r = "
+		),
+		text_from_float(sphere->radius),
+		text(
+			";\n"
+			"	point_in_solid = (pt - c) <= r*r;\n"
+			"}"
+		)
+	};
+	return text_append_many(r, sizeof(r) / sizeof(r[0]));
 }
 
 Scene* scene_sphere(const Sphere* sphere) {
@@ -115,7 +178,9 @@ Scene* scene_sphere(const Sphere* sphere) {
 	memcpy(scene->data, sphere, sizeof(Sphere));
 	scene->data_destructor_fn = free_data_destructor;
 	scene->ray_collision_fn = collision_ray_scene_sphere;
+	scene->ray_collision_fn_glsl_code = collision_ray_scene_sphere_glsl_code;
 	scene->is_point_in_solid_fn = scene_sphere_is_point_in_solid;
+	scene->is_point_in_solid_fn_glsl_code = scene_sphere_is_point_in_solid_glsl_code;
 	return scene;
 }
 
@@ -415,4 +480,17 @@ CollisionResult collision_ray_scene(const Ray* ray, const Scene* scene) {
 
 int scene_is_point_in_solid(const Scene* scene, const Vec3* point) {
 	return scene->is_point_in_solid_fn(scene, point);
+}
+
+Text* collision_ray_scene_glsl_code(const Scene* scene) {
+	const Text* r[] = {
+		text(
+			"void collision_ray_scene(in vec3 ro, in vec3 rd, out int type, out float time, out vec3 normal, out vec3 colour, out float reflectiveness) {\n"
+			"    vec3 pt;\n"
+			"    bool point_in_solid;\n"
+		),
+		text_indent_lines(scene->ray_collision_fn_glsl_code(scene), text("    ")),
+		text("\n}\n")
+	};
+	return text_append_many(r, sizeof(r) / sizeof(r[0]));
 }

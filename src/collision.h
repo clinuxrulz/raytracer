@@ -58,18 +58,32 @@ static __attribute__((unused)) CollisionResult collision_ray_plane(const Ray* ra
 
 static __attribute__((unused)) Text* collision_ray_plane_func_glsl_code() {
 	return text(
-		"void collision_ray_plane(in vec3 ro, in vec3 rd, in vec3 n, in vec3 d, out int type, out float time, out vec3 colour, out float reflectiveness) {"
-		"	d_dot_n = dot(d, n);\n"
-		"	if (-epsilon < d_dot_n && d_dot_n < epsilon) {\n"
+		"void collision_ray_plane(in vec3 ro, in vec3 rd, in vec3 n, in float d, out int type, out float time, out vec3 normal, out vec3 colour, out float reflectiveness) {\n"
+		"	float epsilon = 0.001;\n"
+		"	float rd_dot_n = dot(rd, n);\n"
+		"	if (-epsilon < rd_dot_n && rd_dot_n < epsilon) {\n"
 		"		type = 0;\n"
-		"		normal = vec3(0.0f, 0.0f, 0.0f);\n"
-		"		colour = vec3(0.0f, 0.0f, 0.0f);\n"
-		"		reflectiveness = 0.0f;\n"
+		"		normal = vec3(0.0, 0.0, 0.0);\n"
+		"		colour = vec3(0.0, 0.0, 0.0);\n"
+		"		reflectiveness = 0.0;\n"
 		"	} else {\n"
-		"		t = -(d + dot(o, n)) / dot(d, n);\n"
-		"		if (t < 0.0f) {\n"
-		"			side = ;\n"
+		"		float t = -(d + dot(ro, n)) / rd_dot_n;\n"
+		"		if (t < 0.0) {\n"
+		"			type = 0;\n"
+		"			normal = vec3(0.0, 0.0, 0.0);\n"
+		"			colour = vec3(0.0, 0.0, 0.0);\n"
+		"			reflectiveness = 0.0;\n"
 		"		} else {\n"
+		"			float side = dot(ro, n) + d;\n"
+		"			if (side > 0.0) {\n"
+		"				type = 1;\n"
+		"			} else {\n"
+		"				type = 2;\n"
+		"			}\n"
+		"			time = t;\n"
+		"			normal = n;\n"
+		"			colour = vec3(1.0,1.0,1.0);\n"
+		"			reflectiveness = 0.0;\n"
 		"		}\n"
 		"	}\n"
 		"}\n"
@@ -106,7 +120,7 @@ static __attribute__((unused)) CollisionResult collision_ray_sphere(const Ray* r
 		};
 	}
 	FPType y = (r*r - vec3_dot(&ro_sub_c, &ro_sub_c)) * rd_dot_rd + ro_sub_c_dot_rd*ro_sub_c_dot_rd;
-	if (r < 0) {
+	if (y < 0) {
 		return (CollisionResult){
 			.type = None,
 			.time = 0,
@@ -149,6 +163,54 @@ static __attribute__((unused)) CollisionResult collision_ray_sphere(const Ray* r
 			.reflectiveness = 0
 		};
 	}
+}
+
+static __attribute__((unused)) Text* collision_ray_sphere_func_glsl_code() {
+	return text(
+		"void collision_ray_sphere(in vec3 ro, in vec3 rd, in vec3 c, in float r, out int type, out float time, out vec3 normal, out vec3 colour, out float reflectiveness) {\n"
+		"	float epsilon = 0.001;\n"
+		"	vec3 ro_sub_c = ro - c;\n"
+		"	float ro_sub_c_dot_rd = dot(ro_sub_c,rd);\n"
+		"	float rd_dot_rd = dot(rd,rd);\n"
+		"	if (rd_dot_rd < epsilon) {\n"
+		"		type = 0;\n"
+		"		normal = vec3(0.0, 0.0, 0.0);\n"
+		"		colour = vec3(0.0, 0.0, 0.0);\n"
+		"		reflectiveness = 0.0;\n"
+		"	} else {\n"
+		"		float x = -dot(ro_sub_c, rd) / rd_dot_rd;\n"
+		"		float y = (r*r - dot(ro_sub_c, ro_sub_c)) * rd_dot_rd + ro_sub_c_dot_rd*ro_sub_c_dot_rd;\n"
+		"		if (y < 0.0) {\n"
+		"			type = 0;\n"
+		"			normal = vec3(0.0, 0.0, 0.0);\n"
+		"			colour = vec3(0.0, 0.0, 0.0);\n"
+		"			reflectiveness = 0.0;\n"
+		"		} else {\n"
+		"			y = sqrt(y) / rd_dot_rd;\n"
+		"			float t1 = y - x;\n"
+		"			float t2 = y + x;\n"
+		"			if (t1 > 0.0) {\n"
+		"				type = 1;\n"
+		"				time = t1;\n"
+		"				normal = normalize(ro + rd*t1 - c);\n"
+		"				colour = vec3(1.0, 1.0, 1.0);\n"
+		"				reflectiveness = 0.0;\n"
+		"			} else if (t2 > 0.0) {\n"
+		"				type = 2;\n"
+		"				time = t2;\n"
+		"				normal = normalize(ro + rd*t2 - c);\n"
+		"				colour = vec3(1.0, 1.0, 1.0);\n"
+		"				reflectiveness = 0.0;\n"
+		"			} else {\n"
+		"				type = 0;\n"
+		"				normal = vec3(0.0, 0.0, 0.0);\n"
+		"				colour = vec3(0.0, 0.0, 0.0);\n"
+		"				reflectiveness = 0.0;\n"
+		"			}\n"
+		"		}\n"
+		"	}\n"
+		"}\n"
+	);
 }
 
 #endif /* COLLISION_H_ */

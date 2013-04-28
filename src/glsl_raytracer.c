@@ -12,6 +12,10 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include "text.h"
+#include "collision.h"
+#include "scene.h"
+#include "camera.h"
 
 static const int SCREEN_WIDTH = 640;
 static const int SCREEN_HEIGHT = 480;
@@ -20,6 +24,7 @@ static const int SCREEN_BPP = 24;
 static SDL_Surface* screen = 0;
 static int done = 0;
 static GLuint programId,vertexShaderId,fragmentShaderId;
+static Camera camera;
 
 static const char* sample_vertex_shader =
 	"void main() {\n"
@@ -65,12 +70,86 @@ void printProgramInfoLog(GLuint obj)
     }
 }
 
+static void print_code(const char* code) {
+	int len = strlen(code);
+	int line = 1;
+	int show_line = 1;
+	for (int i = 0; i < len; ++i) {
+		if (show_line) {
+			printf("%i:", line);
+			show_line = 0;
+		}
+		printf("%c", code[i]);
+		if (code[i] == '\n') {
+			show_line = 1;
+			++line;
+		}
+	}
+}
+
 static void create_shader_program() {
 	vertexShaderId = glCreateShader(GL_VERTEX_SHADER);
 	fragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
 
+	Vec3 sphere_centre = (Vec3){0,0,-200};
+	FPType sphere_radius = 50;
+	Sphere sphere = sphere_init(&sphere_centre, sphere_radius);
+	Scene* scene = scene_sphere(&sphere);
+	Text* txt_fragment_shader;
+	{
+		const Text* tmp[] = {
+			text(
+				"uniform float screen_width;\n"
+				"uniform float screen_height;\n"
+				"uniform float screen_depth;\n"
+				"uniform vec3 camera_u;\n"
+				"uniform vec3 camera_v;\n"
+				"uniform vec3 camera_w;\n"
+				"uniform vec3 camera_o;\n"
+				"uniform float test;\n"
+				"\n"
+			),
+			camera_screen_coord_to_ray_glsl_code(),
+			collision_ray_plane_func_glsl_code(),
+			collision_ray_sphere_func_glsl_code(),
+			collision_ray_scene_glsl_code(scene),
+			text(
+				"void main() {\n"
+				"	vec3 ro;\n"
+				"	vec3 rd;\n"
+				"	int type;\n"
+				"	float time;\n"
+				"	vec3 normal;\n"
+				"	vec3 colour;\n"
+				"	float reflectiveness;\n"
+				"	\n"
+				"	screen_coord_to_ray(gl_FragCoord.xy, ro, rd);\n"
+				"	collision_ray_scene(ro, rd, type, time, normal, colour, reflectiveness);\n"
+				"	gl_FragColor = vec4(vec3(colour), 1.0);\n"
+				"}\n"
+			)
+		};
+		txt_fragment_shader = text_append_many(tmp, sizeof(tmp) / sizeof(Text*));
+	}
+	char* fragment_shader = malloc(text_length(txt_fragment_shader)+1);
+	const char* fs = fragment_shader;
+	text_to_string(txt_fragment_shader, fragment_shader);
+	print_code(fs);
+
+	/*
+	Text* test_code = collision_ray_scene_glsl_code(scene);
+	char* t = malloc(text_length(test_code)+1);
+	text_to_string(test_code, t);
+	print_code((const char*)t);
+	free(t);
+	text_unref(test_code);
+	*/
+
 	glShaderSource(vertexShaderId, 1, &sample_vertex_shader, NULL);
-	glShaderSource(fragmentShaderId, 1, &sample_fragment_shader, NULL);
+	glShaderSource(fragmentShaderId, 1, &fs, NULL);
+
+	free(fragment_shader);
+	text_unref(txt_fragment_shader);
 
 	glCompileShader(vertexShaderId);
 	glCompileShader(fragmentShaderId);
@@ -122,10 +201,21 @@ static int init() {
 
 	create_shader_program();
 
+	camera = camera_init();
+	camera = camera_set_fov(&camera, SCREEN_HEIGHT, 75);
+
 	return 1;
 }
 
 static void render() {
+	glUniform1f(glGetUniformLocation(programId, "screen_width"), SCREEN_WIDTH);
+	glUniform1f(glGetUniformLocation(programId, "screen_height"), SCREEN_HEIGHT);
+	glUniform1f(glGetUniformLocation(programId, "screen_depth"), camera.screen_depth);
+	glUniform3f(glGetUniformLocation(programId, "camera_u"), camera.axes.u.x, camera.axes.u.y, camera.axes.u.z);
+	glUniform3f(glGetUniformLocation(programId, "camera_v"), camera.axes.v.x, camera.axes.v.y, camera.axes.v.z);
+	glUniform3f(glGetUniformLocation(programId, "camera_w"), camera.axes.w.x, camera.axes.w.y, camera.axes.w.z);
+	glUniform3f(glGetUniformLocation(programId, "camera_o"), camera.axes.o.x, camera.axes.o.y, camera.axes.o.z);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 

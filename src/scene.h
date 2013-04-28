@@ -13,6 +13,7 @@
 #include "sphere.h"
 #include "plane.h"
 #include "box.h"
+#include "text.h"
 
 typedef struct _Scene Scene;
 
@@ -34,5 +35,7 @@ void scene_unref(Scene* scene);
 
 CollisionResult collision_ray_scene(const Ray* ray, const Scene* scene);
 int scene_is_point_in_solid(const Scene* scene, const Vec3* point);
+
+Text* collision_ray_scene_glsl_code(const Scene* scene);
 
 #endif /* SCENE_H_ */
