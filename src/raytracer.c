@@ -8,14 +8,15 @@
  ============================================================================
  */
 
-#include "camera.h"
-#include "scene.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include "config.h"
+#include "camera.h"
+#include "scene.h"
 
 static const int SCREEN_WIDTH = 640;
 static const int SCREEN_HEIGHT = 480;
@@ -191,6 +192,7 @@ static void run() {
 	final_scene();
 }
 
+#if RAYTRACE_MODE == RAYTRACE_MODE_SOFTWARE
 #ifdef _WIN32
 int CALLBACK WinMain(
 	HINSTANCE hInstance,
@@ -210,4 +212,5 @@ int main(int argc, char** argv) {
 	SDL_Quit();
 	return EXIT_SUCCESS;
 }
+#endif
 #endif

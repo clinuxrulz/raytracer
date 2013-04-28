@@ -15,6 +15,7 @@
 #include "plane.h"
 #include "sphere.h"
 #include "colour.h"
+#include "text.h"
 
 typedef enum {
 	None,
@@ -53,6 +54,26 @@ static __attribute__((unused)) CollisionResult collision_ray_plane(const Ray* ra
 		.colour = (Colour){1,1,1},
 		.reflectiveness = 0
 	};
+}
+
+static __attribute__((unused)) Text* collision_ray_plane_func_glsl_code() {
+	return text(
+		"void collision_ray_plane(in vec3 ro, in vec3 rd, in vec3 n, in vec3 d, out int type, out float time, out vec3 colour, out float reflectiveness) {"
+		"	d_dot_n = dot(d, n);\n"
+		"	if (-epsilon < d_dot_n && d_dot_n < epsilon) {\n"
+		"		type = 0;\n"
+		"		normal = vec3(0.0f, 0.0f, 0.0f);\n"
+		"		colour = vec3(0.0f, 0.0f, 0.0f);\n"
+		"		reflectiveness = 0.0f;\n"
+		"	} else {\n"
+		"		t = -(d + dot(o, n)) / dot(d, n);\n"
+		"		if (t < 0.0f) {\n"
+		"			side = ;\n"
+		"		} else {\n"
+		"		}\n"
+		"	}\n"
+		"}\n"
+	);
 }
 
 static __attribute__((unused)) CollisionResult collision_ray_sphere(const Ray* ray, const Sphere* sphere) {

@@ -1,0 +1,11 @@
+eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.exe.debug.100557385/PATH/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.exe.debug.100557385/PATH/operation=replace
+environment/project/cdt.managedbuild.config.gnu.exe.debug.100557385/PATH/value=C\:\\MinGW\\bin;C\:\\MinGW\\msys\\1.0\\bin;C\:\\glew-1.9.0\\bin
+environment/project/cdt.managedbuild.config.gnu.exe.debug.100557385/append=true
+environment/project/cdt.managedbuild.config.gnu.exe.debug.100557385/appendContributed=true
+environment/project/cdt.managedbuild.config.gnu.exe.release.934986771/PATH/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.exe.release.934986771/PATH/operation=replace
+environment/project/cdt.managedbuild.config.gnu.exe.release.934986771/PATH/value=C\:\\MinGW\\bin;C\:\\MinGW\\msys\\1.0\\bin;C\:\\glew-1.9.0\\bin
+environment/project/cdt.managedbuild.config.gnu.exe.release.934986771/append=true
+environment/project/cdt.managedbuild.config.gnu.exe.release.934986771/appendContributed=true
