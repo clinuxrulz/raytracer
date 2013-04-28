@@ -188,6 +188,28 @@ CollisionResult collision_ray_scene_plane(const Ray* ray, const Scene* scene) {
 	return collision_ray_plane(ray, (const Plane*)scene->data);
 }
 
+Text* collision_ray_scene_plane_glsl_code(const Scene* scene) {
+	const Plane* plane = (const Plane*)scene->data;
+	const Text* r[] = {
+		text(
+			"{\n"
+			"    vec3 n = vec3("
+		),
+		text_from_float(plane->n.x), text(", "), text_from_float(plane->n.y), text(", "), text_from_float(plane->n.z),
+		text(
+			");\n"
+			"    float r = "
+		),
+		text_from_float(plane->d),
+		text(
+			";\n"
+			"    collision_ray_plane(ro, rd, n, d, type, time, normal, colour, reflectiveness);\n"
+			"}"
+		)
+	};
+	return text_append_many(r, sizeof(r) / sizeof(r[0]));
+}
+
 Scene* scene_plane(const Plane* plane) {
 	Scene* scene = scene_new();
 	scene->type = SceneType_Plane;
@@ -195,6 +217,7 @@ Scene* scene_plane(const Plane* plane) {
 	memcpy(scene->data, plane, sizeof(Plane));
 	scene->data_destructor_fn = free_data_destructor;
 	scene->ray_collision_fn = collision_ray_scene_plane;
+	scene->ray_collision_fn_glsl_code = collision_ray_scene_plane_glsl_code;
 	return scene;
 }
 
@@ -301,6 +324,15 @@ int scene_invert_is_point_inside_solid(const Scene* scene, const Vec3* point) {
 	return !scene_is_point_in_solid((const Scene*)scene->data, point);
 }
 
+Text* scene_invert_is_point_in_solid_fn_glsl_code(const Scene* scene) {
+	const Scene* base_scene = (const Scene*)scene->data;
+	const Text* r[] = {
+		text_indent_lines(base_scene->is_point_in_solid_fn_glsl_code(base_scene), text("    ")),
+		text("point_in_solid = !point_in_solid;\n")
+	};
+	return text_append_many(r, sizeof(r) / sizeof(r[0]));
+}
+
 Scene* scene_invert(const Scene* scene) {
 	Scene* r = scene_new();
 	r->type = SceneType_Invert;
@@ -308,6 +340,7 @@ Scene* scene_invert(const Scene* scene) {
 	r->data_destructor_fn = scene_data_destructor;
 	r->ray_collision_fn = collision_ray_scene_invert;
 	r->is_point_in_solid_fn = scene_invert_is_point_inside_solid;
+	r->is_point_in_solid_fn_glsl_code = scene_invert_is_point_in_solid_fn_glsl_code;
 	return r;
 }
 

@@ -30,6 +30,10 @@ static int left_down = 0;
 static int right_down = 0;
 static int down_down = 0;
 static int up_down = 0;
+static int w_down = 0;
+static int s_down = 0;
+static int a_down = 0;
+static int d_down = 0;
 
 static const char* sample_vertex_shader =
 	"void main() {\n"
@@ -96,7 +100,7 @@ static void create_shader_program() {
 	vertexShaderId = glCreateShader(GL_VERTEX_SHADER);
 	fragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
 
-	Vec3 sphere_centre = (Vec3){0,0,-100};
+	Vec3 sphere_centre = (Vec3){0,0,-200};
 	FPType sphere_radius = 50;
 	Sphere sphere = sphere_init(&sphere_centre, sphere_radius);
 	Scene* scene = scene_sphere(&sphere);
@@ -130,6 +134,8 @@ static void create_shader_program() {
 				"	\n"
 				"	screen_coord_to_ray(gl_FragCoord.xy, ro, rd);\n"
 				"	collision_ray_scene(ro, rd, type, time, normal, colour, reflectiveness);\n"
+				"	float a = max(dot(normal, normalize(vec3(1,1,1))),0.3);\n"
+				"	colour *= a;\n"
 				"	gl_FragColor = vec4(vec3(colour), 1.0);\n"
 				"}\n"
 			)
@@ -207,7 +213,7 @@ static int init() {
 	create_shader_program();
 
 	camera = camera_init();
-	camera = camera_set_fov(&camera, SCREEN_HEIGHT, 75);
+	camera = camera_set_fov(&camera, SCREEN_HEIGHT, 45);
 
 	return 1;
 }
@@ -255,6 +261,20 @@ static void process_events() {
 			case SDLK_DOWN:
 				down_down = 1;
 				break;
+			case SDLK_w:
+				w_down = 1;
+				break;
+			case SDLK_s:
+				s_down = 1;
+				break;
+			case SDLK_a:
+				a_down = 1;
+				break;
+			case SDLK_d:
+				d_down = 1;
+				break;
+			default:
+				break;
 			}
 			break;
 		case SDL_KEYUP:
@@ -271,7 +291,23 @@ static void process_events() {
 			case SDLK_DOWN:
 				down_down = 0;
 				break;
+			case SDLK_w:
+				w_down = 0;
+				break;
+			case SDLK_s:
+				s_down = 0;
+				break;
+			case SDLK_a:
+				a_down = 0;
+				break;
+			case SDLK_d:
+				d_down = 0;
+				break;
+			default:
+				break;
 			}
+			break;
+		default:
 			break;
 		}
 	}
@@ -289,6 +325,18 @@ static void move_camera() {
 	}
 	if (up_down) {
 		camera = camera_turn_up(&camera, 3);
+	}
+	if (w_down) {
+		camera = camera_move_forward(&camera, 5);
+	}
+	if (s_down) {
+		camera = camera_move_back(&camera, 5);
+	}
+	if (a_down) {
+		camera = camera_move_left(&camera, 5);
+	}
+	if (d_down) {
+		camera = camera_move_right(&camera, 5);
 	}
 }
 
