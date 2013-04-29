@@ -320,6 +320,22 @@ CollisionResult collision_ray_scene_invert(const Ray* ray, const Scene* scene) {
 	}
 }
 
+Text* collision_ray_scene_invert_glsl_code(const Scene* scene) {
+	const Scene* base_scene = (const Scene*)scene->data;
+	return text_append(
+		base_scene->ray_collision_fn_glsl_code(base_scene),
+		text(
+			"if (type == 1) {\n"
+			"	type = 2;\n"
+			"	normal *= -1;\n"
+			"} else if (type == 2) {\n"
+			"	type = 1;\n"
+			"	normal *= -1;\n"
+			"}\n"
+		)
+	);
+}
+
 int scene_invert_is_point_inside_solid(const Scene* scene, const Vec3* point) {
 	return !scene_is_point_in_solid((const Scene*)scene->data, point);
 }
@@ -339,6 +355,7 @@ Scene* scene_invert(const Scene* scene) {
 	r->data = (void*)scene;
 	r->data_destructor_fn = scene_data_destructor;
 	r->ray_collision_fn = collision_ray_scene_invert;
+	r->ray_collision_fn_glsl_code = collision_ray_scene_invert_glsl_code;
 	r->is_point_in_solid_fn = scene_invert_is_point_inside_solid;
 	r->is_point_in_solid_fn_glsl_code = scene_invert_is_point_in_solid_fn_glsl_code;
 	return r;
@@ -411,6 +428,18 @@ int scene_union_is_point_in_solid(const Scene* scene, const Vec3* point) {
 	return scene_is_point_in_solid(scene1, point) || scene_is_point_in_solid(scene2, point);
 }
 
+Text* scene_union_is_point_in_solid_glsl_code(const Scene* scene) {
+	const ScenePair* pair = (const ScenePair*)scene->data;
+	const Text* r[] = {
+		text("{\n"),
+		pair->scene1->is_point_in_solid_fn_glsl_code(pair->scene1),
+		text("bool tmp = point_in_solid;\n"),
+		pair->scene2->is_point_in_solid_fn_glsl_code(pair->scene2),
+		text("point_in_solid = point_in_soild && tmp;\n")
+	};
+	return text_append_many(r, sizeof(r) / sizeof(r[0]));
+}
+
 Scene* scene_union(const Scene* scene1, const Scene* scene2) {
 	Scene* r = scene_new();
 	r->type = SceneType_Union;
@@ -419,6 +448,7 @@ Scene* scene_union(const Scene* scene1, const Scene* scene2) {
 	r->data_destructor_fn = scene_pair_destructor;
 	r->ray_collision_fn = collision_ray_scene_union;
 	r->is_point_in_solid_fn = scene_union_is_point_in_solid;
+	r->is_point_in_solid_fn_glsl_code = scene_union_is_point_in_solid_glsl_code;
 	return r;
 }
 
